@@ -5,6 +5,7 @@ from keras.layers.pooling import MaxPool2D
 from keras.layers.merge import concatenate, multiply
 from keras.layers import Input
 from keras.models import Model
+from spline_transformer import *
 import keras.backend as K
 import cv2
 import numpy as np
@@ -13,6 +14,8 @@ def preprocess(imgs):
     output = 0
     cv2.equalizeHist(imgs, output)
     return output
+
+NB_Grid = 100
 
 #N0 = 200 for free grid and 4 for PCA
 def WarpEstimatorNet(x, No):
@@ -89,10 +92,9 @@ mask = 0
 from keras.utils.vis_utils import plot_model
 def NetBuild():
     input_layer = Input(shape = (IM_HEIGHT, IM_WIDTH, 1))
-    x = WarpEstimatorNet(input_layer, 200)
-    model = Model(inputs=input_layer, outputs=x)
-    model.summary()
-    plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=False)
+    WEN = WarpEstimatorNet(input_layer, 2*NB_Grid)
+    UnWarpedLayer = TPSTransformerLayer(WEN, control_points=NB_Grid, input_shape = (IM_HEIGHT, IM_WIDTH, 1))
+    #plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=False)
     S = multiply([input_layer, input_layer])
     S = Lambda(S)
     G = RigeEnhancerNet(input_layer)
