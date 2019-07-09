@@ -1,16 +1,16 @@
 import numpy as np
-from keras.applications.inception_v3 import InceptionV3
 from keras.layers import Dense, Flatten, Activation, Input
 from keras.models import Model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-import keras
+from keras.applications.mobilenet_v2 import MobileNetV2
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import TensorBoard
+import keras
 
 NB_CLASS=3
 IM_WIDTH=224
 IM_HEIGHT=224
-batch_size=32
+batch_size=64
 EPOCH=60
 train_root = './data/train'
 val_root = './data/valid'
@@ -19,11 +19,10 @@ import matplotlib.pyplot as plt
 # train data
 train_datagen = ImageDataGenerator(
     rescale=1./255,
-    rotation_range=40, # 角度值，0~180，图像旋转
-    width_shift_range=0.2, # 水平平移，相对总宽度的比例
-    height_shift_range=0.2, # 垂直平移，相对总高度的比例
-    zoom_range=0.2, # 随机缩放范围
-    horizontal_flip=True, # 一半图像水平翻转
+    rotation_range=10, # 角度值，0~180，图像旋转
+    width_shift_range=0.1, # 水平平移，相对总宽度的比例
+    height_shift_range=0.1, # 垂直平移，相对总高度的比例
+    zoom_range=0.1, # 随机缩放范围
     fill_mode='nearest' # 填充新创建像素的方法
 )
 
@@ -38,11 +37,10 @@ train_generator.next()
 val_datagen = ImageDataGenerator(
 
     rescale=1./255,
-    rotation_range=40,  # 角度值，0~180，图像旋转
-    width_shift_range=0.2,  # 水平平移，相对总宽度的比例
-    height_shift_range=0.2,  # 垂直平移，相对总高度的比例
-    zoom_range=0.2,  # 随机缩放范围
-    horizontal_flip=True,  # 一半图像水平翻转
+    rotation_range=10,  # 角度值，0~180，图像旋转
+    width_shift_range=0.1,  # 水平平移，相对总宽度的比例
+    height_shift_range=0.1,  # 垂直平移，相对总高度的比例
+    zoom_range=0.1,  # 随机缩放范围
     fill_mode='nearest'  # 填充新创建像素的方法
 )
 val_generator = val_datagen.flow_from_directory(
@@ -65,18 +63,17 @@ test_generator = test_datagen.flow_from_directory(
 IM_WIDTH = 224
 IM_HEIGHT = 224
 Input_layer = Input((IM_WIDTH, IM_HEIGHT, 3))
-model_inception = InceptionV3(weights = 'imagenet', include_top = False, input_shape = (IM_WIDTH, IM_HEIGHT, 3))
+model_inception = MobileNetV2(weights = 'imagenet', include_top = False, input_shape = (IM_WIDTH, IM_HEIGHT, 3))
 model = model_inception(Input_layer)
 model = Flatten()(model)
-model = Dense(1024)(model)
-model = Dense(128)(model)
+#model = Dense(128)(model)
 model = Dense(2)(model)
 model = Activation('softmax')(model)
 model = Model(Input_layer, model)
-#for layer in model_inception.layers:
-#    layer.trainable = False
+for layer in model_inception.layers:
+    layer.trainable = False
 early_stop = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
-best_model = ModelCheckpoint('Inception_Model.h5', verbose=1, save_best_only=True)
+best_model = ModelCheckpoint('MobileNetModel_3.h5', verbose=1, save_best_only=True)
 model.compile(loss = 'categorical_crossentropy', optimizer = 'rmsprop', metrics=['accuracy'])
 model.summary()
 train_log = model.fit_generator(
@@ -86,5 +83,3 @@ train_log = model.fit_generator(
 loss,acc=model.evaluate_generator(test_generator,steps=32)
 print('Test result:loss:%f,acc:%f' % (loss, acc))
 
-
-model.predict()
